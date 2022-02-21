@@ -1,4 +1,4 @@
-package utils
+package daoutils
 
 import (
 	"math/rand"

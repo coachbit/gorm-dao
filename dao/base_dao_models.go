@@ -1,11 +1,9 @@
-package models
+package dao
 
 import (
-	"fmt"
 	"time"
 
-	"github.com/teachme2/gorm-dao/utils"
-
+	"github.com/coachbit/gorm-dao/dao/daoutils"
 	"github.com/gofrs/uuid"
 )
 
@@ -13,7 +11,6 @@ type BaseModel struct {
 	ID        uuid.UUID `gorm:"type:uuid;primary_key;"`
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	DeletedAt *time.Time `sql:"index"`
 }
 
 func (bm *BaseModel) GetID() uuid.UUID {
@@ -21,37 +18,26 @@ func (bm *BaseModel) GetID() uuid.UUID {
 }
 
 func (bm *BaseModel) GenerateID() {
-	bm.ID = utils.NewUUIDV4()
+	bm.ID = daoutils.NewUUIDV4()
 }
 
 func (bm *BaseModel) IsIDNil() bool {
 	return bm.GetID() == uuid.Nil
 }
 
-var AllTestModels = []interface{}{
-	new(User),
-	new(Something),
-	new(UserWithHooks),
-}
-
-type User struct {
+// DeletableBaseModel can be used for tables with `deleted_at` columns.
+//
+// Use GetDeletedByID() to load those entities anyway.
+//
+// Note that the problem with keeping those in the table are unique columns. For example, a user with `deleted_at` set
+// will still have an email, and any new user can't reuse it. So, if keeping deleted values is important -- maybe it
+// would be better to keep them in another table.
+type DeletableBaseModel struct {
 	BaseModel
-
-	Birth     time.Time
-	Email     string
-	FirstName string `gorm:"column:name"`
-	LastName  string
-	Phone     string
-
-	Code int
+	DeletedAt *time.Time `sql:"index"`
 }
 
-type Something struct {
-	BaseModel
-	UserID uuid.UUID
-	Code   string
-}
-
+/*
 type UserWithHooks struct {
 	BaseModel
 
@@ -64,6 +50,7 @@ type UserWithHooks struct {
 func (p *UserWithHooks) BeforeCreateOrUpdate() map[string]interface{} {
 	p.Name = fmt.Sprintf("%s %s", p.FirstName, p.LastName)
 	return map[string]interface{}{
-		Columns.UserWithHooks.Name: p.Name,
+		"name": p.Name,
 	}
 }
+*/

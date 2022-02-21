@@ -1,4 +1,4 @@
-package utils
+package daoutils
 
 import (
 	"github.com/gofrs/uuid"

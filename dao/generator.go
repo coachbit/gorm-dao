@@ -10,15 +10,22 @@ import (
 	"github.com/tkrajina/go-reflector/reflector"
 )
 
-func GenerateColumnNames(targetFile string, models ...interface{}) error {
+func GenerateColumnNames(targetFile, tabledMd string, models ...interface{}) error {
 	fmt.Printf("Generating %s from %#v\n", targetFile, models)
 	f, err := os.Create(targetFile)
 	if err != nil {
 		return err
 	}
+	md, err := os.Create(tabledMd)
+	if err != nil {
+		return err
+	}
 
-	f.WriteString("package models\n")
-	f.WriteString("/* Run 'go generate' to regenerate this file */\n\n")
+	_, _ = f.WriteString("package appmodels\n")
+	_, _ = f.WriteString("/* Run 'go generate' to regenerate this file */\n\n")
+
+	_, _ = md.WriteString("# Database tables\n")
+	_, _ = md.WriteString("Run 'go generate' to regenerate this file\n\n")
 
 	var declarationCode bytes.Buffer
 	var initializationCode bytes.Buffer
@@ -32,6 +39,7 @@ func GenerateColumnNames(targetFile string, models ...interface{}) error {
 			name = obj.Type().Elem().Name()
 		}
 		fmt.Println("Generating", name)
+		_, _ = md.WriteString("# " + name + "\n\n")
 		declarationCode.WriteString(fmt.Sprintf("%s struct {\n", name))
 		for _, field := range obj.FieldsFlattened() {
 			gormTag, _ := field.Tag("gorm")
@@ -44,6 +52,7 @@ func GenerateColumnNames(targetFile string, models ...interface{}) error {
 						gormFieldName = parts2[1]
 					}
 				}
+				_, _ = md.WriteString("* " + field.Name() + "\n")
 				declarationCode.WriteString(fmt.Sprintf("%s string\n", field.Name()))
 				initializationCode.WriteString(fmt.Sprintf("Columns.%s.%s = \"%s\"\n", name, field.Name(), gormFieldName))
 
@@ -53,15 +62,16 @@ func GenerateColumnNames(targetFile string, models ...interface{}) error {
 			}
 		}
 		declarationCode.WriteString("}\n")
+		_, _ = md.WriteString("\n")
 	}
-	f.WriteString("var Columns struct {\n")
-	f.WriteString(declarationCode.String())
-	f.WriteString("}\n")
-	f.WriteString("// nolint\n")
-	f.WriteString("func init() {\n")
-	f.WriteString(initializationCode.String())
-	f.WriteString("}\n")
-	f.WriteString(code.String())
+	_, _ = f.WriteString("var Columns struct {\n")
+	_, _ = f.WriteString(declarationCode.String())
+	_, _ = f.WriteString("}\n")
+	_, _ = f.WriteString("// nolint\n")
+	_, _ = f.WriteString("func init() {\n")
+	_, _ = f.WriteString(initializationCode.String())
+	_, _ = f.WriteString("}\n")
+	_, _ = f.WriteString(code.String())
 
 	return nil
 }
